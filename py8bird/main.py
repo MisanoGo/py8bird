@@ -1,11 +1,15 @@
+from typing import List
 import tweepy
 from aiogram import Bot
+import asyncio
 
+BOT_TOKEN: str = "5996837717:AAEvTxi4RnvcL5rVx4pqdBcYByyQZhyjSXE"
+CHANNEL_ID: str = "@msn_test_channel"
+TWITTER_TOKEN: str = "AAAAAAAAAAAAAAAAAAAAALvucwEAAAAAXwswoYd3vRqXkeuXPlcLUmLDiTw%3D3UGMWfkOgQbSSRfbH19nX1Ai24GpUBhD9dCGBASgPszc2ium58"
 
-BOT_TOKEN: str = ""
-CHANNEL_ID: int = 0
-
-TWITTER_TOKEN: str = ""
+key_filter: List[str] = [
+    "python"
+]
 
 class TwittePublisher(tweepy.StreamingClient):
     aiobot: Bot = Bot(BOT_TOKEN)
@@ -13,7 +17,7 @@ class TwittePublisher(tweepy.StreamingClient):
     def on_tweet(self, tweet):
         if self.check(tweet):
             self.retwitte(tweet)
-            self.publish(tweet)
+            asyncio.run(self.publish(tweet))
 
     def check(self,tweet) -> bool: # TODO
         return True
@@ -24,11 +28,15 @@ class TwittePublisher(tweepy.StreamingClient):
     #def adminApproval(self, tweet) -> :
         #pass
 
-    def publish(self,tweet):
+    async def publish(self,tweet):
         msg: str = f"{tweet.text}\n"
-        self.aiobot.send_message(CHANNEL_ID,msg)
+        print(msg)
+        await self.aiobot.send_message(CHANNEL_ID,msg)
 
 
 
-printer = TwittePublisher(TWITTER_TOKEN)
-printer.sample()
+tp = TwittePublisher(TWITTER_TOKEN)
+
+tp.add_rules([tweepy.StreamRule(i) for i in key_filter])
+tp.filter()
+#tp.sample()
