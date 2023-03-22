@@ -1,34 +1,67 @@
 from typing import List
+from enum import Enum
 import asyncio
 
-import tweepy
-from aiogram import Bot
+from tweepy import StreamingClient, API,OAuth2BearerHandler, StreamRule
+from aiogram import Bot, Dispatcher, Router, F
+from aiogram.types import CallbackData
+from aiogram.utils.keboard import InlineKeyboardBuilder as IKB
 
 from utils import env_conf
 
 
 BOT_TOKEN: str = env_conf["BOT_TOKEN"]
 CHANNEL_ID: str = env_conf["CHANNEL_ID"]
+TWITTER_TOKEN: str = env_conf["TWITTER_TOKEN"]
+
+aiobot: Bot = Bot(BOT_TOKEN)
+router: Router = Router()
+
+auth = OAuth2BearerHandler(TWITTER_TOKEN)
+api: API = API(auth)
 
 
-class TwittePublisher(tweepy.StreamingClient):
-    aiobot: Bot = Bot(BOT_TOKEN)
+class Action(str, Enum):  
+    cancel: str = "cancel"
+    send: str = "send"
 
+class AdminAction(CallbackData):
+    action: Action
+    tweet_id: int
+
+async def getAdminApproval(tweet):
+    b = IKB()
+    for a in Action:
+        b.button(text=a.value.title(),callback_data=(a.value,tweet.id))
+    msg: str = f"{tweet.text}\n"
+    await aiobot.send_message(CHANNEL_ID,msg,reply_markup=b)
+
+class TwittePublisher(StreamingClient):
     def on_tweet(self, tweet):
-        if self.check(tweet):
-            self.retwitte(tweet)
-            asyncio.run(self.publish(tweet))
+        asyncio.run(getAdminApproval(tweet))
 
-    def check(self,tweet) -> bool: # TODO
-        return True
+@router.callback_query(AdminAction.filter(F.action == Action.send))
+async def publishTwitte(callback_data: AdminAction, bot: Bot):
+    api.retweet(callback_data.tweet_id)
 
-    def retwitte(self, tweet):
-        pass
+    tweet = api.get_status(callback_data.tweet_id)
+    bot.send_message(CHANNEL_ID,tweet)
 
-    #def adminApproval(self, tweet) -> :
-        #pass
+def main():
+    key_filter: List[str] = [
+        "python",
+    ]
+    dp = Dispatcher()
+    dp.include_router(router)
 
-    async def publish(self,tweet):
-        msg: str = f"{tweet.text}\n"
-        print(msg)
-        await self.aiobot.send_message(CHANNEL_ID,msg)
+    tp = TwittePublisher(TWITTER_TOKEN)
+    tp.add_rules([StreamRule(i) for i in key_filter])
+    tp.filter()
+
+    dp.start_polling(aiobot)
+
+
+
+if __name__=="__main__":
+    main()
+
