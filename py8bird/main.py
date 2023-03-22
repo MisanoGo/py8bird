@@ -30,17 +30,17 @@ class AdminAction(CallbackData, prefix="adm"):
     action: Action
     tweet_id: str
 
-def getAdminApproval(tweet):
+async def getAdminApproval(tweet):
     b = IKB()
     for a in Action:
         b.button(text=a.value.title(),callback_data=AdminAction(action=a,tweet_id=tweet.id))
     msg: str = f"{tweet.text}\n"
-    asyncio.run(aiobot.send_message(CHANNEL_ID,msg,reply_markup=b.as_markup()))
+    await aiobot.send_message(CHANNEL_ID,msg,reply_markup=b.as_markup())
 
 class TwittePublisher(StreamingClient):
     def on_tweet(self, tweet):
 
-        getAdminApproval(tweet)
+        asyncio.run(getAdminApproval(tweet))
   
 
 @router.callback_query(AdminAction.filter(F.action == Action.send))
