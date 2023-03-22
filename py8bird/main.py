@@ -3,9 +3,10 @@ from enum import Enum
 import asyncio
 
 from tweepy import StreamingClient, API,OAuth2BearerHandler, StreamRule
+from tweepy.models import Status
 from aiogram import Bot, Dispatcher, Router, F
-from aiogram.types import CallbackData
-from aiogram.utils.keboard import InlineKeyboardBuilder as IKB
+
+from aiogram.utils.keyboard import CallbackData, InlineKeyboardBuilder as IKB
 
 from utils import env_conf
 
@@ -25,23 +26,25 @@ class Action(str, Enum):
     cancel: str = "cancel"
     send: str = "send"
 
-class AdminAction(CallbackData):
+class AdminAction(CallbackData, prefix="adm"):
     action: Action
-    tweet_id: int
+    tweet_id: str
 
-async def getAdminApproval(tweet):
+def getAdminApproval(tweet):
     b = IKB()
     for a in Action:
-        b.button(text=a.value.title(),callback_data=(a.value,tweet.id))
+        b.button(text=a.value.title(),callback_data=AdminAction(action=a,tweet_id=tweet.id))
     msg: str = f"{tweet.text}\n"
-    await aiobot.send_message(CHANNEL_ID,msg,reply_markup=b)
+    asyncio.run(aiobot.send_message(CHANNEL_ID,msg,reply_markup=b.as_markup()))
 
 class TwittePublisher(StreamingClient):
     def on_tweet(self, tweet):
-        asyncio.run(getAdminApproval(tweet))
+
+        getAdminApproval(tweet)
+  
 
 @router.callback_query(AdminAction.filter(F.action == Action.send))
-async def publishTwitte(callback_data: AdminAction, bot: Bot):
+async def publishTwitte(callback_query,callback_data: AdminAction, bot: Bot):
     api.retweet(callback_data.tweet_id)
 
     tweet = api.get_status(callback_data.tweet_id)
@@ -58,7 +61,7 @@ def main():
     tp.add_rules([StreamRule(i) for i in key_filter])
     tp.filter()
 
-    dp.start_polling(aiobot)
+    asyncio.run(dp.start_polling(aiobot))
 
 
 
