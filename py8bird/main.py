@@ -1,6 +1,7 @@
 import asyncio
 
-from tweepy import StreamingClient
+from tweepy import StreamingClient, StreamRule
+
 from aiogram import Bot
 
 from utils import env_conf, key_filters
@@ -12,12 +13,15 @@ TWITTER_TOKEN: str = env_conf["TWITTER_TOKEN"]
 
 aiobot: Bot = Bot(BOT_TOKEN, parse_mode="HTML")
 
-async def sendTwitte(tweet):
-    await aiobot.send_message(OWNER_ID,tweet.text)
+def sendTwitte(tweet):
+    return (aiobot.send_message(OWNER_ID,tweet.text))
 
 class TwittePublisher(StreamingClient):
     def on_tweet(self, tweet):
-        asyncio.run(sendTwiite(tweet))
+        try :
+            return asyncio.run(sendTwitte(tweet))
+        except:
+            pass
  
 
 def main():
