@@ -10,7 +10,7 @@ def key_filters():
     TODO: set this function as @property
 
     """
-    file_name = "./key_filters.list"
+    file_name = "key_filters.list"
 
     with open(file_name,"r") as file:
         return file.read().splitlines()

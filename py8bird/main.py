@@ -21,18 +21,14 @@ class TwittePublisher(AsyncStreamingClient):
     async def on_tweet(self, tweet):
         await sendTwitte(tweet)
 
-    async def run_forever(self):
-        rsp = await self.add_rules(srl)
-        self.filter()                                          
-
 async def main():
-    tpc = TwittePublisher(TWITTER_TOKEN)
-    await tpc.run_forever()
+    tpc: AsyncStreamingClient = TwittePublisher(TWITTER_TOKEN)
+    #await tpc.delete_rules()
+    await tpc.add_rules(srl)
+    await tpc.filter()
 
 
 if __name__=="__main__":
     logging.basicConfig(filename='.log',level=logging.DEBUG)
-
-    evt_lp = asyncio.get_event_loop()
-    evt_lp.run_until_complete(main())
-
+    m = main()
+    asyncio.run(m)
